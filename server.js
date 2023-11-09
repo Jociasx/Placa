@@ -100,3 +100,82 @@ app.get('/consulta/:placa', async (req, res) => {
 app.listen(port, () => {
   console.log(`Servidor está rodando na porta ${port}`);
 });
+
+app.post('/cadastro', async (req, res) => {
+  const { email, senha } = req.body;
+
+  try {
+    const usuario = new Usuario({ email, senha });
+    await usuario.save();
+    res.status(201).json({ message: 'Usuário cadastrado com sucesso!' });
+  } catch (error) {
+    res.status(400).json({ error: 'Erro ao cadastrar usuário' });
+  }
+});
+
+app.post('/login', async (req, res) => {
+  const { email, senha } = req.body;
+
+  try {
+    const usuario = await Usuario.findOne({ email });
+
+    if (!usuario) {
+      return res.status(401).json({ error: 'Credenciais incorretas' });
+    }
+
+    const senhaValida = await bcrypt.compare(senha, usuario.senha);
+
+    if (!senhaValida) {
+      return res.status(401).json({ error: 'Credenciais incorretas' });
+    }
+
+    // Gere um token de autenticação (você pode usar JWT)
+    const token = 'seu_token_de_autenticacao';
+
+    res.json({ token });
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao fazer login' });
+  }
+});
+
+const jwt = require('jsonwebtoken');
+
+// Middleware para verificar token
+function verificaToken(req, res, next) {
+  const token = req.header('Authorization');
+  if (!token) {
+    return res.status(401).json({ error: 'Acesso não autorizado' });
+  }
+
+  jwt.verify(token, 'seu_segredo', (err, decoded) => {
+    if (err) {
+      return res.status(401).json({ error: 'Token inválido' });
+    }
+    next();
+  });
+}
+
+app.get('/consulta/:placa', verificaToken, async (req, res) => {
+  // Rota protegida por token
+  // ...
+});
+
+app.get('/relatorio/cidade/:cidade', verificaToken, async (req, res) => {
+  // Rota protegida por token
+  // ...
+});
+
+app.post('/alerta', verificaToken, async (req, res) => {
+  // Rota protegida por token
+  // ...
+});
+
+app.post('/alerta', verificaToken, async (req, res) => {
+  const mensagem = 'Inconsistência de dados ou equipamentos foram detectados no sistema';
+
+  // Emita notificação para todos os usuários conectados (use WebSockets ou outra tecnologia apropriada)
+  // ...
+
+  res.json({ message: 'Alerta enviado com sucesso!' });
+});
+

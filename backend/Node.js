@@ -98,3 +98,22 @@ app.get('/consulta/:placa', async (req, res) => {
 app.listen(port, () => {
   console.log(`Servidor está rodando na porta ${port}`);
 });
+
+const mongoose = require('mongoose');
+const bcrypt = require('bcrypt');
+
+const usuarioSchema = new mongoose.Schema({
+  email: String,
+  senha: String,
+  // Outros campos do usuário
+});
+
+// Antes de salvar, criptografe a senha
+usuarioSchema.pre('save', async function (next) {
+  const usuario = this;
+  if (usuario.isModified('senha')) {
+    usuario.senha = await bcrypt.hash(usuario.senha, 10);
+  }
+  next();
+});
+
